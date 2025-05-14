@@ -6,6 +6,7 @@ import {
   Marker,
   Popup,
   TileLayer,
+  useMap,
   useMapEvents,
 } from "react-leaflet";
 
@@ -75,6 +76,37 @@ const MapClickHandler = ({ onMapClick }) => {
   });
   return null;
 };
+
+function LocateUserOnLoad() {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      // Browser doesn't support Geolocation, fallback immediately
+      map.setView([30.0444, 31.2357], 13);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        map.setView([latitude, longitude], 13);
+      },
+      (err) => {
+        // If user denies or any error, fall back to default
+        console.warn("Geolocation failed, using default", err);
+        map.setView([30.0444, 31.2357], 13);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0,
+      }
+    );
+  }, [map]);
+
+  return null;
+}
 
 export default function Home() {
   const [formData, setFormData] = useState({
@@ -368,7 +400,7 @@ export default function Home() {
               {/* Custom styled button */}
               <label
                 htmlFor="image-upload"
-                className={`cursor-pointer inline-flex items-center px-4 py-2 border border-transparent rounded-md font-semibold text-white transition-colors
+                className={`cursor-pointer inline-flex items-center px-4 py-2 border border-transparent select-none rounded-md font-semibold text-white transition-colors
         ${
           errors.images
             ? "bg-red-500 hover:bg-red-600"
@@ -444,7 +476,7 @@ export default function Home() {
       {/* Right side (Map) */}
       <div className="h-1/2 lg:h-auto lg:w-3/4 bg-gray-100 shadow-lg lg:rounded-r-2xl overflow-auto rounded-b-2xl lg:rounded-bl-none">
         <MapContainer
-          center={[30.033333, 31.233334]}
+          center={[30.0444, 31.2357]}
           zoom={13}
           scrollWheelZoom={true}
           className="w-full h-full"
@@ -453,9 +485,9 @@ export default function Home() {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-
+          {/* On-load geolocation fallback logic */}
+          <LocateUserOnLoad />
           <MapClickHandler onMapClick={handleMapClick} />
-
           {selectedPosition && (
             <Marker
               position={selectedPosition}
